@@ -29,6 +29,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	securejoin "github.com/cyphar/filepath-securejoin"
 	ocispec "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/s3rj1k/go-fanotify/fanotify"
 	log "github.com/sirupsen/logrus"
@@ -128,6 +129,7 @@ var runcPaths = []string{
 	"/run/torcx/unpack/docker/bin/runc",
 	"/usr/bin/crun",
 	"/usr/bin/conmon",
+	"/var/lib/rancher/k3s/data/current/bin/runc",
 }
 
 // initFanotify initializes the fanotify API with the flags we need
@@ -183,6 +185,15 @@ func NewRuncNotifier(callback RuncNotifyFunc) (*RuncNotifier, error) {
 	if runcPath != "" {
 		log.Debugf("Runcfanotify: trying runc from RUNC_PATH env variable at %s", runcPath)
 
+		// Check if we have to prepend the host root to the runtime path
+		if !strings.HasPrefix(runcPath, host.HostRoot) {
+			// SecureJoin will resolve symlinks according to the host root
+			runcPath, err = securejoin.SecureJoin(host.HostRoot, runcPath)
+			if err != nil {
+				return nil, fmt.Errorf("runcfanotify: securejoin failed: %w", err)
+			}
+		}
+
 		if _, err := os.Stat(runcPath); errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
@@ -193,7 +204,12 @@ func NewRuncNotifier(callback RuncNotifyFunc) (*RuncNotifier, error) {
 		runcMonitored = true
 	} else {
 		for _, r := range runcPaths {
-			runcPath := filepath.Join(host.HostRoot, r)
+			// SecureJoin will resolve symlinks according to the host root
+			runcPath, err := securejoin.SecureJoin(host.HostRoot, r)
+			if err != nil {
+				log.Debugf("Runcfanotify: securejoin failed: %s", err)
+				continue
+			}
 
 			log.Debugf("Runcfanotify: trying runc at %s", runcPath)
 
