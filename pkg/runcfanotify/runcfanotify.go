@@ -127,6 +127,7 @@ var runcPaths = []string{
 	"/usr/lib/cri-o-runc/sbin/runc",
 	"/run/torcx/unpack/docker/bin/runc",
 	"/usr/bin/crun",
+	"/usr/bin/conmon",
 }
 
 // initFanotify initializes the fanotify API with the flags we need
