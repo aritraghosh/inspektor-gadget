@@ -32,3 +32,11 @@ Examples showing how to use `datasource`
 
 - [fields](./datasource/fields/): Show how to access specific fields from the datasource.
 - [mutate](./datasource/mutate/): Mutate and add fields to a datasource.
+
+### Executing Gadgets on remove Inspektor Gadget instances
+
+Examples showing how to execute gadgets in remove instances of Inspektor Gadget
+(either `ig` or `iìg-k8s`) by using the grpc runtime.
+
+- [custom_operator](./grpc/custom_operator/): Run a remote gadget and print its
+  output to the terminal in json format by using a custom operator.
