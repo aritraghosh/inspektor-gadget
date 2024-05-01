@@ -84,6 +84,7 @@ type FieldAccessor interface {
 	Int16(Data) int16
 	Int32(Data) int32
 	Int64(Data) int64
+	Bool(Data) bool
 
 	Float32(Data) float32
 	Float64(Data) float64
@@ -96,6 +97,7 @@ type FieldAccessor interface {
 	PutInt16(Data, int16)
 	PutInt32(Data, int32)
 	PutInt64(Data, int64)
+	PutBool(Data, bool)
 
 	String(Data) string
 	CString(Data) string
@@ -382,6 +384,14 @@ func (a *fieldAccessor) Int64(data Data) int64 {
 	return int64(a.ds.byteOrder.Uint64(val))
 }
 
+func (a *fieldAccessor) Bool(data Data) bool {
+	val := a.Get(data)
+	if len(val) < 1 {
+		return false
+	}
+	return val[0] == 1
+}
+
 func (a *fieldAccessor) Float32(data Data) float32 {
 	return math.Float32frombits(a.Uint32(data))
 }
@@ -428,4 +438,12 @@ func (a *fieldAccessor) PutInt32(data Data, val int32) {
 
 func (a *fieldAccessor) PutInt64(data Data, val int64) {
 	a.ds.byteOrder.PutUint64(a.Get(data), uint64(val))
+}
+
+func (a *fieldAccessor) PutBool(data Data, val bool) {
+	if val {
+		a.Get(data)[0] = 1
+	} else {
+		a.Get(data)[0] = 0
+	}
 }
