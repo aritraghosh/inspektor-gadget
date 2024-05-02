@@ -85,6 +85,10 @@ func (f *Field) FieldType() api.Kind {
 		return api.Kind_Float32
 	case reflect.Float64:
 		return api.Kind_Float64
+	case reflect.Array:
+		if f.Type.Elem().Kind() == reflect.Uint8 {
+			return api.Kind_CString
+		}
 	}
 	return api.Kind_Invalid
 }
@@ -238,34 +242,13 @@ func (i *ebpfInstance) getFieldsFromMember(member btf.Member, fields *[]*Field, 
 		return
 	}
 
-	fsize := uint32(0)
-	fieldType := "raw bytes"
-	if refType != nil {
-		fsize = uint32(refType.Size())
-		fieldType = refType.String()
+	if refType == nil {
+		i.logger.Debugf(" skipping field %q (%T)", prefix+member.Name, member.Type)
+		return
 	}
 
-	// handling arrays as raw data
-	if arr, ok := member.Type.(*btf.Array); ok {
-		// make sure type
-		arrType := arr.Type
-
-		// Resolve
-		if typedef, ok := arrType.(*btf.Typedef); ok {
-			arrType = btfhelpers.GetUnderlyingType(typedef)
-		}
-
-		intType, ok := arrType.(*btf.Int)
-		if !ok {
-			i.logger.Debugf(" skipping field %q (%T) (array of non-int %T)", prefix+member.Name, member.Type, arr.Type)
-			return
-		}
-		if intType.Size != 1 {
-			i.logger.Debugf(" skipping field %q (%T) (array of elements with size != 1)", prefix+member.Name, member.Type)
-			return
-		}
-		fsize = intType.Size * arr.Nelems
-	}
+	fsize := uint32(refType.Size())
+	fieldType := refType.String()
 
 	if fsize == 0 {
 		i.logger.Debugf(" skipping field %q (%T)", prefix+member.Name, member.Type)
