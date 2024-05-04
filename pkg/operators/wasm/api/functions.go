@@ -18,40 +18,40 @@
 package api
 
 //go:wasmimport env xlog
-func xlog(s stringPtr)
+func xlog(level uint32, str uint64)
 
 //go:wasmimport env newDataSource
-func newDataSource(name stringPtr) DataSource
+func newDataSource(name uint64) DataSource
 
 //go:wasmimport env getDataSource
-func getDataSource(name stringPtr) DataSource
+func getDataSource(name uint64) DataSource
 
 //go:wasmimport env dataSourceSubscribe
-func dataSourceSubscribe(ds DataSource, prio uint32, cb uint64)
+func dataSourceSubscribe(ds uint32, prio uint32, cb uint64)
 
 //go:wasmimport env dataSourceGetField
-func dataSourceGetField(ds DataSource, name stringPtr) Field
+func dataSourceGetField(ds uint32, name uint64) uint32
 
 //go:wasmimport env dataSourceAddField
-func dataSourceAddField(ds DataSource, name stringPtr) Field
+func dataSourceAddField(ds uint32, name uint64) uint32
 
 //go:wasmimport env getField
-func getField(ds DataSource) Field
+func getField(ds uint32) uint32
 
 //go:wasmimport env dataSourceNewData
-func dataSourceNewData(ds DataSource) Data
+func dataSourceNewData(ds uint32) uint32
 
 //go:wasmimport env dataSourceEmitAndRelease
-func dataSourceEmitAndRelease(ds DataSource, data Data)
+func dataSourceEmitAndRelease(ds uint32, data uint32)
 
 //go:wasmimport env dataSourceRelease
-func dataSourceRelease(ds DataSource, data Data)
+func dataSourceRelease(ds uint32, data uint32)
 
 //go:wasmimport env fieldAccessorGetString
-func fieldAccessorGetString(acc Field, data Data) stringPtr
+func fieldAccessorGetString(acc uint32, data uint32) uint64
 
 //go:wasmimport env fieldAccessorSetString
-func fieldAccessorSetString(acc Field, data Data, str stringPtr)
+func fieldAccessorSetString(acc uint32, data uint32, str uint64)
 
 ////go:wasmimport env mfree
 //func mfree(uint32)
