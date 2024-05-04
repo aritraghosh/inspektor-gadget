@@ -21,6 +21,7 @@ import (
 	wapi "github.com/tetratelabs/wazero/api"
 
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/datasource"
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-service/api"
 )
 
 func (i *wasmOperatorInstance) addFieldFuncs(env wazero.HostModuleBuilder) {
@@ -42,19 +43,24 @@ func (i *wasmOperatorInstance) addFieldFuncs(env wazero.HostModuleBuilder) {
 
 	env.NewFunctionBuilder().
 		WithGoModuleFunction(
-			wapi.GoModuleFunc(i.fieldAccessorGetUint8),
-			[]wapi.ValueType{wapi.ValueTypeI32, wapi.ValueTypeI32}, // Accessor, Data
-			[]wapi.ValueType{wapi.ValueTypeI32},                    // Val
+			wapi.GoModuleFunc(i.fieldAccessorGet),
+			[]wapi.ValueType{wapi.ValueTypeI32, wapi.ValueTypeI32, wapi.ValueTypeI32}, // Accessor, Data, Kind
+			[]wapi.ValueType{wapi.ValueTypeI64},                                       // Val
 		).
-		Export("fieldAccessorGetUint8")
+		Export("fieldAccessorGet")
 
 	env.NewFunctionBuilder().
 		WithGoModuleFunction(
-			wapi.GoModuleFunc(i.fieldAccessorSetUint8),
-			[]wapi.ValueType{wapi.ValueTypeI32, wapi.ValueTypeI32, wapi.ValueTypeI32}, // Accessor, Data
+			wapi.GoModuleFunc(i.fieldAccessorSet),
+			[]wapi.ValueType{
+				wapi.ValueTypeI32, // Accessor
+				wapi.ValueTypeI32, // Data
+				wapi.ValueTypeI32, // Kind
+				wapi.ValueTypeI64, // Value
+			},
 			[]wapi.ValueType{},
 		).
-		Export("fieldAccessorSetUint8")
+		Export("fieldAccessorSet")
 }
 
 // fieldAccessorGetString returns the field as a string
@@ -149,9 +155,10 @@ func (i *wasmOperatorInstance) fieldAccessorSetString(ctx context.Context, m wap
 // Params:
 // - stack[0]: Field handle
 // - stack[1]: Data handle
+// - stack[2]: Kind
 // Return value:
 // - Uint8 value
-func (i *wasmOperatorInstance) fieldAccessorGetUint8(ctx context.Context, m wapi.Module, stack []uint64) {
+func (i *wasmOperatorInstance) fieldAccessorGet(ctx context.Context, m wapi.Module, stack []uint64) {
 	acc, ok := i.getHandle(wapi.DecodeU32(stack[0])).(datasource.FieldAccessor)
 	if !ok {
 		i.logger.Warnf("field handle %d not found", stack[0])
@@ -165,15 +172,42 @@ func (i *wasmOperatorInstance) fieldAccessorGetUint8(ctx context.Context, m wapi
 		return
 	}
 
-	stack[0] = uint64(acc.Uint8(data))
+	switch api.Kind(stack[2]) {
+	case api.Kind_Int8:
+		stack[0] = uint64(acc.Int8(data))
+	case api.Kind_Int16:
+		stack[0] = uint64(acc.Int16(data))
+	case api.Kind_Int32:
+		stack[0] = uint64(acc.Int32(data))
+	case api.Kind_Int64:
+		stack[0] = uint64(acc.Int64(data))
+	case api.Kind_Uint8:
+		stack[0] = uint64(acc.Uint8(data))
+	case api.Kind_Uint16:
+		stack[0] = uint64(acc.Uint16(data))
+	case api.Kind_Uint32:
+		stack[0] = uint64(acc.Uint32(data))
+	case api.Kind_Uint64:
+		stack[0] = uint64(acc.Uint64(data))
+	case api.Kind_Float32:
+		stack[0] = uint64(acc.Float32(data))
+	case api.Kind_Float64:
+		stack[0] = uint64(acc.Float64(data))
+	//case api.Kind_Bool:
+	//	stack[0] = uint64(acc.Bool(data))
+	default:
+		i.logger.Warnf("unknown field kind: %d", stack[2])
+		stack[0] = 0
+	}
 }
 
-// fieldAccessorSetUint8 saves a uint8 on the field
+// fieldAccessorSet saves a uint8 on the field
 // Params:
 // - stack[0]: Field handle
 // - stack[1]: Data handle
-// - stack[2]: Value to store
-func (i *wasmOperatorInstance) fieldAccessorSetUint8(ctx context.Context, m wapi.Module, stack []uint64) {
+// - stack[2]: Kind
+// - stack[3]: Value to store
+func (i *wasmOperatorInstance) fieldAccessorSet(ctx context.Context, m wapi.Module, stack []uint64) {
 	acc, ok := i.getHandle(wapi.DecodeU32(stack[0])).(datasource.FieldAccessor)
 	if !ok {
 		i.logger.Warnf("field handle %d not found", stack[0])
@@ -187,7 +221,33 @@ func (i *wasmOperatorInstance) fieldAccessorSetUint8(ctx context.Context, m wapi
 		return
 	}
 
-	acc.PutUint8(data, uint8(stack[2]))
+	switch api.Kind(stack[2]) {
+	case api.Kind_Int8:
+		acc.PutInt8(data, int8(stack[3]))
+		stack[0] = uint64(acc.Int8(data))
+	case api.Kind_Int16:
+		acc.PutInt16(data, int16(stack[3]))
+	case api.Kind_Int32:
+		acc.PutInt32(data, int32(stack[3]))
+	case api.Kind_Int64:
+		acc.PutInt64(data, int64(stack[3]))
+	case api.Kind_Uint8:
+		acc.PutUint8(data, uint8(stack[3]))
+	case api.Kind_Uint16:
+		acc.PutUint16(data, uint16(stack[3]))
+	case api.Kind_Uint32:
+		acc.PutUint32(data, uint32(stack[3]))
+	case api.Kind_Uint64:
+		acc.PutUint64(data, uint64(stack[3]))
+	// TODO: some missing types
+	//case api.Kind_Float32:
+	//	acc.PutFloat32(data, float32(stack[3]))
+	//case api.Kind_Float64:
+	//	acc.PutFloat64(data, float64(stack[3]))
+	//case api.Kind_Bool:
+	//	stack[0] = uint64(acc.Bool(data))
+	default:
+		i.logger.Warnf("unknown field kind: %d", stack[2])
+		stack[0] = 0
+	}
 }
-
-// TODO: complete with other data types

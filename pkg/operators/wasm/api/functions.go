@@ -47,6 +47,12 @@ func dataSourceEmitAndRelease(ds uint32, data uint32)
 //go:wasmimport env dataSourceRelease
 func dataSourceRelease(ds uint32, data uint32)
 
+//go:wasmimport env fieldAccessorGet
+func fieldAccessorGet(acc uint32, data uint32, kind uint32) uint64
+
+//go:wasmimport env fieldAccessorSet
+func fieldAccessorSet(acc uint32, data uint32, kind uint32, value uint64)
+
 //go:wasmimport env fieldAccessorGetString
 func fieldAccessorGetString(acc uint32, data uint32) uint64
 

@@ -35,7 +35,15 @@ func gadgetInit() int {
 		return 1
 	}
 
+	uidF := ds.GetField("uid")
+	if nameF == 0 {
+		api.Warn("failed to get field")
+		return 1
+	}
+
 	ds.Subscribe(func(source api.DataSource, data api.Data) {
+		uidF.SetUint32(data, 1234)
+
 		payload := nameF.String(data)
 
 		var str string
