@@ -15,23 +15,23 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/operators/wasm/api"
 )
 
 //export init
 func gadgetInit() int {
-	api.Log("hello from wasm")
+	api.Info("hello from wasm")
+	api.Warn("hello from wasm warn")
+
 	ds := api.GetDataSource("dns")
 	if ds == 0 {
-		api.Log("failed to get datasource")
+		api.Warn("failed to get datasource")
 		return 1
 	}
 
 	nameF := ds.GetField("name")
 	if nameF == 0 {
-		api.Log("failed to get field")
+		api.Warn("failed to get field")
 		return 1
 	}
 
@@ -47,7 +47,7 @@ func gadgetInit() int {
 			if i+1+length < len(payload) {
 				str += string(payload[i+1:i+1+length]) + "."
 			} else {
-				api.Log(fmt.Sprintf("invalid payload %+v\n", payload))
+				api.Warn("invalid payload %+v", payload)
 				return
 			}
 			i += length
