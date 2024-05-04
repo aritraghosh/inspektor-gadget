@@ -168,14 +168,17 @@ func (i *wasmOperatorInstance) init(gadgetCtx operators.GadgetContext) error {
 	env := i.rt.NewHostModuleBuilder("env")
 	env.NewFunctionBuilder().
 		WithGoModuleFunction(wapi.GoModuleFunc(func(ctx context.Context, m wapi.Module, stack []uint64) {
-			// TODO: implement log level
-			buf, err := stringFromStack(m, stack[0])
+			buf, err := stringFromStack(m, stack[1])
 			if err != nil {
-				gadgetCtx.Logger().Warnf("reading string from stack: %v", err)
+				i.logger.Warnf("reading string from stack: %v", err)
 				return
 			}
-			gadgetCtx.Logger().Info(buf)
-		}), []wapi.ValueType{wapi.ValueTypeI64}, []wapi.ValueType{}).Export("xlog")
+			// TODO: do we need to use switch?
+			// TODO: why are we using switch in logger.go?
+			i.logger.Log(logger.Level(stack[0]), buf)
+		}), []wapi.ValueType{wapi.ValueTypeI32, wapi.ValueTypeI64}, // log level, message
+			[]wapi.ValueType{}).
+		Export("xlog")
 
 	i.addDataSourceFuncs(env)
 	i.addFieldFuncs(env)
